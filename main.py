@@ -2,7 +2,7 @@ import customtkinter as ctk
 
 # 1. Import the Layout Manager (The code you just wrote)
 # Ensure the file is named 'app_layout.py' inside the 'modules' folder
-from modules.app_layout import MainLayout
+from app_layout import MainLayout
 
 # 2. Import Logic (The Brains)
 from modules.todo.todo_logic import TodoLogic
