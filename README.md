@@ -34,17 +34,16 @@ A modular desktop application built with Python and CustomTkinter. This project 
 This project follows a **Modular Architecture** to facilitate teamwork and avoid code conflicts.
 
 ```text
-ProjectRoot/
-│
-├── main.py                 # THE CONTAINER: Handles the window and sidebar logic.
-├── storage.py              # THE ENGINE: Reusable class for saving JSON to AppData.
-│
-├── modules/                # FEATURE MODULES
-│   ├── todo/
-│   │   └── todo_ui.py      # Logic specific to the To-Do List.
-│   │
-│   └── notes/
-│       └── notes_ui.py     # Logic specific to the Sticky Notes board.
-│
-├── requirements.txt        # Dependencies list.
-└── README.md               # Documentation.
+/project_root
+  ├── main.py                # Entry point (Simple)
+  ├── layout_manager.py      # MainLayout (Orchestrator)
+  ├── storage.py             # Shared storage engine
+  │
+  └── /modules
+       ├── /todo
+       │    ├── todo_ui.py     # View
+       │    └── todo_logic.py  # Model & Controller combined
+       │
+       └── /notes
+            ├── notes_ui.py    # View
+            └── notes_logic.py # Model & Controller combined
