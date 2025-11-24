@@ -1,14 +1,11 @@
 import customtkinter as ctk
-# This assumes storage.py is in the main project folder (ProjectRoot/storage.py)
-from storage import TodoStorage
-
 
 class TodoFrame(ctk.CTkFrame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, controller, **kwargs):
         super().__init__(master, **kwargs)
 
-        # Initialize the Storage Engine
-        self.storage = TodoStorage()
+        # 1. Inject Controller (The Brain)
+        self.controller = controller
 
         # Grid Configuration
         self.grid_columnconfigure(0, weight=1)
@@ -16,11 +13,11 @@ class TodoFrame(ctk.CTkFrame):
         self.grid_rowconfigure(3, weight=1)  # Completed Tasks
         self.grid_rowconfigure(4, weight=0)  # Clear Button
 
-        # 1. Title Label
+        # Title
         self.title_label = ctk.CTkLabel(self, text="My Tasks", font=ctk.CTkFont(size=30, weight="bold"))
         self.title_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
-        # 2. Input Area
+        # Input Area
         self.entry = ctk.CTkEntry(self, placeholder_text="Add a new task...")
         self.entry.grid(row=1, column=0, padx=(20, 120), pady=10, sticky="ew")
         self.entry.bind("<Return>", lambda event: self.add_new_task())
@@ -28,81 +25,62 @@ class TodoFrame(ctk.CTkFrame):
         self.add_button = ctk.CTkButton(self, text="Add Task", command=self.add_new_task, width=100)
         self.add_button.grid(row=1, column=0, padx=(0, 20), pady=10, sticky="e")
 
-        # 3. Active Tasks Frame
+        # Active Tasks Frame
         self.active_frame = ctk.CTkScrollableFrame(self, label_text="Active Tasks")
         self.active_frame.grid(row=2, column=0, padx=20, pady=10, sticky="nsew")
 
-        # 4. Completed Tasks Frame
+        # Completed Tasks Frame
         self.completed_frame = ctk.CTkScrollableFrame(self, label_text="Completed Tasks", label_fg_color="gray")
         self.completed_frame.grid(row=3, column=0, padx=20, pady=10, sticky="nsew")
 
-        # 5. Clear Button
+        # Clear Button
         self.clear_button = ctk.CTkButton(self, text="Clear Completed", fg_color="#D32F2F", hover_color="#B71C1C",
                                           command=self.clear_history)
         self.clear_button.grid(row=4, column=0, padx=20, pady=20, sticky="ew")
 
-        # Lists to keep track of widgets
-        self.active_widgets = []
-        self.completed_widgets = []
-
-        # 6. Load Data immediately
-        self.load_tasks_from_storage()
+        # 2. Load Data via Controller
+        self.refresh_view()
 
     def add_new_task(self):
         text = self.entry.get()
         if text:
-            self.create_active_task(text)
+            # Send to controller
+            self.controller.add_task(text)
             self.entry.delete(0, "end")
-            self.update_storage()
+            self.refresh_view()
 
-    def create_active_task(self, text):
-        checkbox = ctk.CTkCheckBox(self.active_frame, text=text)
-        checkbox.configure(command=lambda: self.move_to_completed(checkbox))
-        checkbox.pack(pady=5, anchor="w", padx=10)
-        self.active_widgets.append(checkbox)
-
-    def create_completed_task(self, text):
-        checkbox = ctk.CTkCheckBox(self.completed_frame, text=text, text_color="gray")
-        checkbox.select()
-        checkbox.configure(command=lambda: self.move_to_active(checkbox))
-        checkbox.pack(pady=5, anchor="w", padx=10)
-        self.completed_widgets.append(checkbox)
-
-    def move_to_completed(self, widget):
-        text = widget.cget("text")
-        if widget in self.active_widgets:
-            self.active_widgets.remove(widget)
-        widget.destroy()
-        self.create_completed_task(text)
-        self.update_storage()
-
-    def move_to_active(self, widget):
-        text = widget.cget("text")
-        if widget in self.completed_widgets:
-            self.completed_widgets.remove(widget)
-        widget.destroy()
-        self.create_active_task(text)
-        self.update_storage()
+    def toggle_task(self, task_text):
+        """User clicked a checkbox. Tell controller to flip the status."""
+        self.controller.toggle_task_status(task_text)
+        self.refresh_view()
 
     def clear_history(self):
-        for widget in self.completed_widgets:
+        """Tell controller to delete all completed items."""
+        self.controller.clear_completed_tasks()
+        self.refresh_view()
+
+    def refresh_view(self):
+        """Clear all lists and redraw them based on Controller data."""
+        # 1. Clear current widgets
+        for widget in self.active_frame.winfo_children():
             widget.destroy()
-        self.completed_widgets.clear()
-        self.update_storage()
+        for widget in self.completed_frame.winfo_children():
+            widget.destroy()
 
-    def update_storage(self):
-        data = []
-        for widget in self.active_widgets:
-            data.append({"text": widget.cget("text"), "completed": False})
-        for widget in self.completed_widgets:
-            data.append({"text": widget.cget("text"), "completed": True})
+        # 2. Get fresh data
+        # Data format: [{'text': 'Buy Milk', 'completed': False}, ...]
+        tasks = self.controller.get_tasks()
 
-        self.storage.save_data(data)
-
-    def load_tasks_from_storage(self):
-        data = self.storage.load_data()
-        for item in data:
-            if item["completed"]:
-                self.create_completed_task(item["text"])
+        # 3. Sort into frames
+        for task in tasks:
+            if task['completed']:
+                # Draw in Completed Frame
+                chk = ctk.CTkCheckBox(self.completed_frame, text=task['text'], text_color="gray")
+                chk.select() # Visually show as checked
+                chk.configure(command=lambda t=task['text']: self.toggle_task(t))
+                chk.pack(pady=5, anchor="w", padx=10)
             else:
-                self.create_active_task(item["text"])
+                # Draw in Active Frame
+                chk = ctk.CTkCheckBox(self.active_frame, text=task['text'])
+                chk.configure(command=lambda t=task['text']: self.toggle_task(t))
+                chk.pack(pady=5, anchor="w", padx=10)

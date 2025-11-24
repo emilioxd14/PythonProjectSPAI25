@@ -1,6 +1,4 @@
 import customtkinter as ctk
-# Import the shared storage engine from the project root
-from storage import TodoStorage
 
 
 class StickyNote(ctk.CTkFrame):
@@ -12,6 +10,7 @@ class StickyNote(ctk.CTkFrame):
         self.configure(fg_color="#F9F871", corner_radius=10, width=200, height=200)
         self.pack_propagate(False)
 
+        # Delete Button
         self.delete_btn = ctk.CTkButton(
             self, text="✕", width=25, height=25,
             fg_color="transparent", text_color="black", hover_color="#E0E060",
@@ -19,6 +18,7 @@ class StickyNote(ctk.CTkFrame):
         )
         self.delete_btn.pack(anchor="ne", padx=5, pady=5)
 
+        # Text Area
         self.textbox = ctk.CTkTextbox(
             self, fg_color="transparent", text_color="black",
             font=("Comic Sans MS", 14), wrap="word"
@@ -27,24 +27,26 @@ class StickyNote(ctk.CTkFrame):
         self.textbox.insert("0.0", text_content)
 
     def get_text(self):
-        return self.textbox.get("0.0", "end").strip()
+        # Safety check: if widget is destroyed, return empty string
+        try:
+            return self.textbox.get("0.0", "end").strip()
+        except ValueError:
+            return ""
 
 
 class StickyNotesFrame(ctk.CTkFrame):
     """The main 'Corkboard' area."""
 
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, controller, **kwargs):
         super().__init__(master, **kwargs)
 
-        # --- NEW: Initialize Storage with a specific filename for notes ---
-        self.storage = TodoStorage(filename="sticky_notes.json")
-        # ---------------------------------------------------------------
+        self.controller = controller
 
         # Top Bar
         self.top_bar = ctk.CTkFrame(self, fg_color="transparent")
         self.top_bar.pack(fill="x", padx=20, pady=10)
 
-        self.add_button = ctk.CTkButton(self.top_bar, text="+ New Note", command=self.add_note)
+        self.add_button = ctk.CTkButton(self.top_bar, text="+ New Note", command=lambda: self.add_note(save=True))
         self.add_button.pack(side="right")
 
         self.title_label = ctk.CTkLabel(self.top_bar, text="My Idea Board", font=ctk.CTkFont(size=24, weight="bold"))
@@ -59,17 +61,32 @@ class StickyNotesFrame(ctk.CTkFrame):
         self.scroll_frame.grid_columnconfigure(2, weight=1)
 
         self.notes_list = []
+
+        # Load initial data
         self.load_notes()
 
-    def add_note(self, text=""):
+    def add_note(self, text="", save=True):
+        """
+        Creates a new note widget.
+        :param text: The content of the note
+        :param save: If True, saves to database immediately.
+                     Set to False when loading existing notes to prevent recursion loops.
+        """
         new_note = StickyNote(
             self.scroll_frame,
             text_content=text,
             on_delete=lambda: self.delete_note_from_ui(new_note)
         )
+
+        # Bind key release to auto-save logic
+        new_note.textbox.bind("<KeyRelease>", lambda event: self.save_notes())
+
         self.notes_list.append(new_note)
         self.refresh_grid()
-        self.save_notes()
+
+        # --- FIX: Only save if this is a user action, not a load action ---
+        if save:
+            self.save_notes()
 
     def delete_note_from_ui(self, note_widget):
         note_widget.destroy()
@@ -87,13 +104,13 @@ class StickyNotesFrame(ctk.CTkFrame):
             note.grid(row=row, column=col, padx=10, pady=10)
 
     def save_notes(self):
+        """Scrape text from UI and send to Controller"""
         data = [note.get_text() for note in self.notes_list]
-        # --- NEW: Use the shared storage engine ---
-        self.storage.save_data(data)
+        self.controller.update_all_notes(data)
 
     def load_notes(self):
-        # --- NEW: Use the shared storage engine ---
-        data = self.storage.load_data()
+        """Get data from Controller and populate UI"""
+        data = self.controller.get_notes()
         for text in data:
-            if text.strip():
-                self.add_note(text)
+            # --- FIX: Pass save=False to avoid triggering the save loop ---
+            self.add_note(text, save=False)
