@@ -36,7 +36,7 @@ This project follows a **Modular Architecture** to facilitate teamwork and avoid
 ```text
 /project_root
   ├── main.py                # Entry point (Simple)
-  ├── layout_manager.py      # MainLayout (Orchestrator)
+  ├── app_layout.py      # MainLayout (Orchestrator)
   ├── storage.py             # Shared storage engine
   │
   └── /modules
