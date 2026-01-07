@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 
 
 class TodoStorage:
@@ -45,6 +46,15 @@ class TodoStorage:
             with open(self.filepath, "r") as f:
                 data = json.load(f)
             return data
+        except json.JSONDecodeError as e:
+            print(f"Corrupt JSON file detected: {e}")
+            try:
+                backup_path = self.filepath + ".bak"
+                shutil.move(self.filepath, backup_path)
+                print(f"Backed up corrupt file to: {backup_path}")
+            except Exception as move_error:
+                print(f"Failed to backup corrupt file: {move_error}")
+            return []
         except Exception as e:
             print(f"Error loading data: {e}")
             return []
