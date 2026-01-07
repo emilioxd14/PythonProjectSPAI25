@@ -12,7 +12,6 @@ A modular desktop application built with Python and CustomTkinter. This project 
 ### 1. Unified Dashboard
 * **Sidebar Navigation:** Seamless toggling between To-Do, Sticky Notes, Calendar, and AI views.
 * **Modern UI:** Built with `customtkinter` for high-DPI support and a clean, system-adaptive look.
-* **Themes:** Supports **Standard**, **Zen**, and **Cyberpunk** visual themes to match your workflow mood.
 
 ### 2. To-Do Module
 * **Task Management:** Add tasks via keyboard (Enter) or button.
@@ -78,6 +77,3 @@ This project follows a **Modular Architecture** to facilitate scalability and co
     python main.py
     ```
 
----
-
-*Built with ❤️ using Python & CustomTkinter.*
