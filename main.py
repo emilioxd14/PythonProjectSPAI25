@@ -29,6 +29,34 @@ class MainApp(ctk.CTk):
 
         # Hand over control to the Layout Manager
         self.layout = MainLayout(self, self.controllers)
+        
+        # Start Reminder Polling
+        self.check_reminders()
+
+    def check_reminders(self):
+        """Polls for overdue tasks every minute."""
+        overdue = self.controllers['todo'].check_due_tasks()
+        
+        # Avoid opening multiple windows if one is already open
+        if overdue and (not hasattr(self, 'reminder_window') or not self.reminder_window.winfo_exists()):
+            self.reminder_window = ctk.CTkToplevel(self)
+            self.reminder_window.title("Task Reminder")
+            self.reminder_window.geometry("350x250")
+            self.reminder_window.attributes("-topmost", True)
+            
+            ctk.CTkLabel(self.reminder_window, text="⏰ Overdue Tasks!", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=10)
+            
+            scroll = ctk.CTkScrollableFrame(self.reminder_window, height=150)
+            scroll.pack(fill="x", padx=10, pady=5)
+            
+            for task in overdue:
+                lbl = ctk.CTkLabel(scroll, text=f"• {task['text']}", anchor="w")
+                lbl.pack(fill="x", padx=5)
+            
+            ctk.CTkButton(self.reminder_window, text="Dismiss", command=self.reminder_window.destroy).pack(pady=10)
+
+        # Check again in 60 seconds
+        self.after(60000, self.check_reminders)
 
 if __name__ == "__main__":
     ctk.set_appearance_mode("Dark")

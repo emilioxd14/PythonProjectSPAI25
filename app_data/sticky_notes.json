@@ -1,0 +1,16 @@
+[
+    {
+        "text": "",
+        "is_favorite": false,
+        "created_at": "13.12.2025",
+        "is_locked": true,
+        "pin": "5770"
+    },
+    {
+        "text": "Hello this is a new note",
+        "is_favorite": false,
+        "created_at": "06.01.2026",
+        "is_locked": true,
+        "pin": "5770"
+    }
+]
